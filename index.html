@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controlador</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilo para el modo oscuro */
+        body.dark-mode {
+            background-color: #2c2c2c;
+            color: #ffffff;
+        }
+        body.dark-mode .btn-primary {
+            background-color: #1a73e8;
+            border-color: #1a73e8;
+        }
+        body.dark-mode .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        body.dark-mode input,
+        body.dark-mode select {
+            background-color: #343a40;
+            color: #ffffff;
+            border-color: #343a40;
+        }
+        body.dark-mode .card {
+            background-color: #1f1f1f;
+            border-color: #343a40;
+        }
+        body.dark-mode .alert {
+            background-color: #2d2d2d;
+            color: #ffffff;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sticky Navbar -->
+    <nav class="navbar navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Controlador admitiendo diferentes funciones</span>
+            <button id="toggleDarkMode" class="btn btn-info">Modo oscuro</button>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- Formulario de entrada -->
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-6 col-lg-4">
+                <form id="calcForm" class="card p-4">
+                    <div class="form-group">
+                        <label for="numA">Número A</label>
+                        <input type="number" id="numA" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="numB">Número B</label>
+                        <input type="number" id="numB" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="function">Función</label>
+                        <select id="function" class="form-control" required>
+                            <option value="suma">Suma</option>
+                            <option value="resta">Resta</option>
+                            <option value="multiplicacion">Multiplicación</option>
+                            <option value="division">División</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="method">Método de envío</label>
+                        <select id="method" class="form-control" required>
+                            <option value="1">Por URL</option>
+                            <option value="2">Por Ruta</option>
+                            <option value="3">Por Headers</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Enviar</button>
+                    <button type="reset" class="btn btn-secondary btn-block">Limpiar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-12 col-md-6 col-lg-4">
+                <div id="result" class="card p-4" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Alternar modo oscuro
+            const toggleDarkModeButton = document.getElementById('toggleDarkMode');
+            toggleDarkModeButton.addEventListener('click', function () {
+                document.body.classList.toggle('dark-mode');
+                toggleDarkModeButton.textContent = document.body.classList.contains('dark-mode') ? 'Modo claro' : 'Modo oscuro';
+            });
+
+            $('#calcForm').on('submit', function (e) {
+                e.preventDefault();
+
+                // Obtener valores del formulario
+                const numA = $('#numA').val();
+                const numB = $('#numB').val();
+                const operation = $('#function').val();
+                const method = $('#method').val();
+
+                // URL del controlador
+                let url = '';
+                const options = {
+                    method: method === '3' ? 'POST' : 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                };
+
+                if (method === '1') {
+                    url = `http://www.controller.lan/controller1.php?function=${operation}&numA=${numA}&numB=${numB}`;
+                } else if (method === '2') {
+                    url = `http://www.controller.lan/controller2.php/${operation}/${numA}/${numB}`;
+                } else if (method === '3') {
+                    url = `http://www.controller.lan/controller3.php`;
+                    options.headers = {
+                        ...options.headers,
+                        function: operation,
+                        numA,
+                        numB,
+                    };
+                } else {
+                    alert("Método no válido.");
+                    return;
+                }
+
+                fetch(url, options)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data) {
+                            $('#result').show().html(`
+                                <div class="alert alert-success">
+                                    <strong>Resultado:</strong><br>
+                                    <ul>
+                                        <li><strong>Función:</strong> ${data.function}</li>
+                                        <li><strong>Número A:</strong> ${data.num1}</li>
+                                        <li><strong>Número B:</strong> ${data.num2}</li>
+                                        <li><strong>Resultado:</strong> ${data.resultado}</li>
+                                    </ul>
+                                </div>
+                            `);
+                        } else {
+                            $('#result').show().html(`
+                                <div class="alert alert-danger">Error en la operación.</div>
+                            `);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                        $('#result').show().html(`
+                            <div class="alert alert-danger">Error al conectar con el servidor.</div>
+                        `);
+                    });
+            });
+
+            // Limpiar resultados al presionar "Limpiar"
+            $('button[type="reset"]').on('click', function () {
+                $('#result').hide().empty();
+            });
+        });
+    </script>
+</body>
+</html>
